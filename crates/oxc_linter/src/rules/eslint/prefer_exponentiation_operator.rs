@@ -175,6 +175,12 @@ fn needs_parens_for_parent(node: &AstNode, ctx: &LintContext) -> bool {
         | AstKind::AwaitExpression(_)
         | AstKind::TSAsExpression(_)
         | AstKind::TSSatisfiesExpression(_) => true,
+        AstKind::StaticMemberExpression(_)
+        | AstKind::ComputedMemberExpression(_)
+        | AstKind::PrivateFieldExpression(_)
+        | AstKind::CallExpression(_)
+        | AstKind::TaggedTemplateExpression(_)
+        | AstKind::TSNonNullExpression(_) => parent.span().start == node.span().start,
         _ => false,
     }
 }
@@ -223,6 +229,15 @@ fn test() {
         "Math.pow(a, b) as any",
         // With comments - no fix should be applied
         "Math.pow(a, b) + Math.pow(c, /* comment */ d)",
+        "Math.pow(a, b).toFixed(2)",
+        "Math.pow(a, b)?.toFixed(2)",
+        "Math.pow(a, b)[0]",
+        "Math.pow(a, b)()",
+        "Math.pow(a, b)`x`",
+        "Math.pow(a, b)!",
+        "object[Math.pow(a, b)]",
+        "fn(Math.pow(a, b))",
+        "(Math.pow(a, b)).toFixed(2)",
     ];
 
     let fix = vec![
@@ -261,6 +276,15 @@ fn test() {
         ("Math.pow(a.b, c.d)", "a.b ** c.d"),
         // Call expressions don't need parens
         ("Math.pow(f(), g())", "f() ** g()"),
+        ("Math.pow(a, b).toFixed(2)", "(a ** b).toFixed(2)"),
+        ("Math.pow(a, b)?.toFixed(2)", "(a ** b)?.toFixed(2)"),
+        ("Math.pow(a, b)[0]", "(a ** b)[0]"),
+        ("Math.pow(a, b)()", "(a ** b)()"),
+        ("Math.pow(a, b)`x`", "(a ** b)`x`"),
+        ("Math.pow(a, b)!", "(a ** b)!"),
+        ("object[Math.pow(a, b)]", "object[a ** b]"),
+        ("fn(Math.pow(a, b))", "fn(a ** b)"),
+        ("(Math.pow(a, b)).toFixed(2)", "(a ** b).toFixed(2)"),
     ];
 
     Tester::new(
